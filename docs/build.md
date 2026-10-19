@@ -5,6 +5,7 @@
 ```sh
 make            # 生成 dist/ 下的四个字体，.otf 和 .woff2 各一份
 make check      # 用 OTS（浏览器使用的字体检查器）检查
+make release    # 检查后打包到 release/<版本>/
 make clean
 ```
 
@@ -17,6 +18,15 @@ make clean
 | `PAODING` | `../paoding` | paoding 仓库 |
 | `SANS_RUN`、`SERIF_RUN` | `$(PAODING)/out/sans`、`$(PAODING)/out/serif` | 运行目录 |
 | `JOBS` | 8 | paoding run 的进程数 |
+
+## 发布
+
+`make release` 写出发布用的文件：含 OTF、WOFF2、`OFL.txt`、`NOTICE.md` 的 zip，单独的四个 WOFF2，`SHA256SUMS`，以及发布说明 `notes.md`（各字体的字数，构建所用的提交和输入的哈希）。发布：
+
+```sh
+gh release create v0.002 release/0.002/*.zip release/0.002/*.woff2 release/0.002/SHA256SUMS \
+  --title "Paoding Color Fonts 0.002" --notes-file release/0.002/notes.md
+```
 
 ## 单个字体
 

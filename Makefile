@@ -1,6 +1,7 @@
 # The four fonts, from paoding runs of Source Han Sans and Serif SC.
 #   make            runs paoding where a run is missing (some ten minutes a font), then builds
 #   make check      the fonts through OTS, the sanitizer browsers use
+#   make release    checks them and packs them for a GitHub release under release/<version>/
 # PAODING, JOBS, SANS_RUN and SERIF_RUN can be set on the command line.
 
 PAODING ?= ../paoding
@@ -13,7 +14,7 @@ BUILD = uv run paoding-color-fonts
 FONTS = dist/PaodingSansSC-Regular.otf dist/PaodingSansSCInk-Regular.otf \
         dist/PaodingSerifSC-Regular.otf dist/PaodingSerifSCInk-Regular.otf
 
-.PHONY: all check clean
+.PHONY: all check release clean
 all: $(FONTS)
 
 $(SANS_FONT) $(SERIF_FONT):
@@ -43,5 +44,8 @@ check: $(FONTS)
 	print("OTS:", "failed " + " ".join(bad) if bad else "ok"); sys.exit(bool(bad))' \
 	$(FONTS) $(FONTS:.otf=.woff2)
 
+release: check
+	uv run python -m paoding_color_fonts.release $(FONTS) --runs $(SANS_RUN) $(SERIF_RUN) --paoding $(PAODING)
+
 clean:
-	rm -rf dist
+	rm -rf dist release
