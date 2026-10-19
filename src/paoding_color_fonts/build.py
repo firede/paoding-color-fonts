@@ -31,6 +31,8 @@ from fontTools.ttLib.tables import otTables as ot
 from paoding.record import realize_record
 from paoding.target.outline import OutlineFont
 
+VERSION = "0.002"
+
 # one color per part, by its place in the record's nodes (stacking order, bottom first)
 LIGHT = ["#C8372D", "#1F5FBF", "#2E8B3E", "#B7791F", "#7B3FB0", "#13858F"]
 DARK = ["#FF8A7F", "#7DB2FF", "#78D492", "#F2BE55", "#C597F2", "#5FD6DF"]
@@ -139,11 +141,12 @@ def build(run, source, out, family, kind, chars=None):
         "uniqueFontIdentifier": f"{ps};{header['tool']}",
         "fullName": f"{family} Regular",
         "psName": ps,
-        "version": "Version 0.001",
+        "version": f"Version {VERSION}",
         "licenseDescription": "This Font Software is licensed under the SIL Open Font License, Version 1.1.",
         "licenseInfoURL": "https://openfontlicense.org",
     })
     fb.setupPost()
+    fb.font["head"].fontRevision = float(VERSION)
 
     if kind == "palette":
         rgba = lambda hexes: [tuple(int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)) + (1.0,) for h in hexes]
