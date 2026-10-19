@@ -1,15 +1,13 @@
-# The four fonts, from paoding runs of Source Han Sans and Serif SC.
-#   make            runs paoding where a run is missing (some ten minutes a font), then builds
+# The four fonts, from paoding's records of Source Han Sans and Serif SC.
+#   make            fetches the pinned inputs of sources.toml into data/, then builds
 #   make check      the fonts through OTS, the sanitizer browsers use
 #   make release    checks them and packs them for a GitHub release under release/<version>/
-# PAODING, JOBS, SANS_RUN and SERIF_RUN can be set on the command line.
+# To build from runs of your own, set SANS_RUN and SERIF_RUN (see docs/build.md).
 
-PAODING ?= ../paoding
-JOBS ?= 8
-SANS_RUN ?= $(PAODING)/out/sans
-SERIF_RUN ?= $(PAODING)/out/serif
-SANS_FONT = $(PAODING)/data/fonts/SourceHanSansSC-Regular.otf
-SERIF_FONT = $(PAODING)/data/fonts/SourceHanSerifSC-Regular.otf
+SANS_RUN ?= data/runs/sans
+SERIF_RUN ?= data/runs/serif
+SANS_FONT = data/fonts/SourceHanSansSC-Regular.otf
+SERIF_FONT = data/fonts/SourceHanSerifSC-Regular.otf
 BUILD = uv run paoding-color-fonts
 FONTS = dist/PaodingSansSC-Regular.otf dist/PaodingSansSCInk-Regular.otf \
         dist/PaodingSerifSC-Regular.otf dist/PaodingSerifSCInk-Regular.otf
@@ -17,25 +15,25 @@ FONTS = dist/PaodingSansSC-Regular.otf dist/PaodingSansSCInk-Regular.otf \
 .PHONY: all check release clean
 all: $(FONTS)
 
-$(SANS_FONT) $(SERIF_FONT):
-	cd $(PAODING) && uv run paoding fetch
+# fetched again whenever sources.toml changes
+data/.fetched: sources.toml
+	rm -rf data/runs
+	uv run paoding fetch --sources sources.toml --data data
+	touch $@
 
-$(SANS_RUN)/records.jsonl: | $(SANS_FONT)
-	cd $(PAODING) && uv run paoding run --font $(abspath $(SANS_FONT)) --out $(abspath $(SANS_RUN)) --jobs $(JOBS) --no-report
+# made by the fetch above, which the fonts depend on first
+$(SANS_FONT) $(SERIF_FONT) data/runs/sans/records.jsonl data/runs/serif/records.jsonl: ;
 
-$(SERIF_RUN)/records.jsonl: | $(SERIF_FONT)
-	cd $(PAODING) && uv run paoding run --font $(abspath $(SERIF_FONT)) --out $(abspath $(SERIF_RUN)) --jobs $(JOBS) --no-report
-
-dist/PaodingSansSC-Regular.otf: $(SANS_RUN)/records.jsonl src/paoding_color_fonts/build.py
+dist/PaodingSansSC-Regular.otf: data/.fetched $(SANS_RUN)/records.jsonl $(SANS_FONT) src/paoding_color_fonts/build.py
 	$(BUILD) --run $(SANS_RUN) --font $(SANS_FONT) --family "Paoding Sans SC" --out $@
 
-dist/PaodingSansSCInk-Regular.otf: $(SANS_RUN)/records.jsonl src/paoding_color_fonts/build.py
+dist/PaodingSansSCInk-Regular.otf: data/.fetched $(SANS_RUN)/records.jsonl $(SANS_FONT) src/paoding_color_fonts/build.py
 	$(BUILD) --run $(SANS_RUN) --font $(SANS_FONT) --family "Paoding Sans SC Ink" --kind ink --out $@
 
-dist/PaodingSerifSC-Regular.otf: $(SERIF_RUN)/records.jsonl src/paoding_color_fonts/build.py
+dist/PaodingSerifSC-Regular.otf: data/.fetched $(SERIF_RUN)/records.jsonl $(SERIF_FONT) src/paoding_color_fonts/build.py
 	$(BUILD) --run $(SERIF_RUN) --font $(SERIF_FONT) --family "Paoding Serif SC" --out $@
 
-dist/PaodingSerifSCInk-Regular.otf: $(SERIF_RUN)/records.jsonl src/paoding_color_fonts/build.py
+dist/PaodingSerifSCInk-Regular.otf: data/.fetched $(SERIF_RUN)/records.jsonl $(SERIF_FONT) src/paoding_color_fonts/build.py
 	$(BUILD) --run $(SERIF_RUN) --font $(SERIF_FONT) --family "Paoding Serif SC Ink" --kind ink --out $@
 
 check: $(FONTS)
@@ -45,7 +43,7 @@ check: $(FONTS)
 	$(FONTS) $(FONTS:.otf=.woff2)
 
 release: check
-	uv run python -m paoding_color_fonts.release $(FONTS) --runs $(SANS_RUN) $(SERIF_RUN) --paoding $(PAODING)
+	uv run python -m paoding_color_fonts.release $(FONTS) --runs $(SANS_RUN) $(SERIF_RUN)
 
 clean:
 	rm -rf dist release

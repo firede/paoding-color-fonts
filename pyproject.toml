@@ -15,7 +15,7 @@ dependencies = [
 paoding-color-fonts = "paoding_color_fonts.build:main"
 
 [tool.uv.sources]
-paoding = { path = "../paoding", editable = true }
+paoding = { git = "https://github.com/firede/paoding", tag = "v0.1.0" }
 
 [build-system]
 requires = ["hatchling"]

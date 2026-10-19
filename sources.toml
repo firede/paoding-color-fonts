@@ -1,0 +1,23 @@
+# Inputs, pinned. make fetches them into data/ with paoding fetch, which refuses a file
+# whose SHA-256 differs. None of them are part of this repository; see each license.
+
+[paoding-source-han-sc]
+url = "https://github.com/firede/paoding/releases/download/v0.1.0/paoding-0.1.0-source-han-sc.zip"
+sha256 = "039e4cfc8690783c99785b72ba5e1bc0ca83b340d36adb16cbac316d86b7a095"
+dest = "paoding/paoding-0.1.0-source-han-sc.zip"
+extract = { "SourceHanSansSC-Regular/records.jsonl" = "runs/sans/records.jsonl", "SourceHanSerifSC-Regular/records.jsonl" = "runs/serif/records.jsonl" }
+license = "paoding's records: see the README.txt inside"
+
+[source-han-sans-sc]
+url = "https://github.com/adobe-fonts/source-han-sans/releases/download/2.005R/09_SourceHanSansSC.zip"
+sha256 = "ef7364f7ac2564be1ae9c1d74276de2653fe38b73449070398c4fc0b7e032ff1"
+dest = "fonts/shs-sc.zip"
+extract = { "OTF/SimplifiedChinese/SourceHanSansSC-Regular.otf" = "fonts/SourceHanSansSC-Regular.otf", "LICENSE.txt" = "fonts/SourceHanSans-LICENSE.txt" }
+license = "OFL-1.1"
+
+[source-han-serif-sc]
+url = "https://github.com/adobe-fonts/source-han-serif/releases/download/2.003R/09_SourceHanSerifSC.zip"
+sha256 = "8f633642eedf9bf23ab3336faa3d03ce1b56c14d654cd25752bc829c05f79f0d"
+dest = "fonts/shserif-sc.zip"
+extract = { "OTF/SimplifiedChinese/SourceHanSerifSC-Regular.otf" = "fonts/SourceHanSerifSC-Regular.otf", "LICENSE.txt" = "fonts/SourceHanSerif-LICENSE.txt" }
+license = "OFL-1.1"

@@ -1,6 +1,6 @@
 # 生成
 
-需要 [uv](https://docs.astral.sh/uv/)，以及与本仓库并列的 [paoding](https://github.com/firede/paoding) 仓库（`../paoding`）。
+需要 [uv](https://docs.astral.sh/uv/)。
 
 ```sh
 make            # 生成 dist/ 下的四个字体，.otf 和 .woff2 各一份
@@ -9,15 +9,17 @@ make release    # 检查后打包到 release/<版本>/
 make clean
 ```
 
-`make` 对思源黑体和思源宋体各跑一次 `paoding run`，再生成字体；缺少来源字体时先在 paoding 里执行 `paoding fetch`。paoding 的运行只在运行目录缺少记录时执行，8 个进程每套字体约一刻钟；之后只要运行记录和生成代码不变，`make` 不会重复生成。要用新的切分结果，删掉运行目录或把 `SANS_RUN`、`SERIF_RUN` 指向别的目录。
+`make` 先按 `sources.toml` 把固定版本的输入下载到 `data/`，核对哈希：[paoding](https://github.com/firede/paoding) 发布的思源黑体、思源宋体的部件标注，以及这两套字体本身。之后只要输入和生成代码不变，`make` 不会重复生成。paoding 本身按 git tag 安装（`pyproject.toml`），用来从标注重建各部件。
 
-可以在命令行上设置的变量：
+## 用自己的切分
 
-| 变量 | 默认 | |
-|---|---|---|
-| `PAODING` | `../paoding` | paoding 仓库 |
-| `SANS_RUN`、`SERIF_RUN` | `$(PAODING)/out/sans`、`$(PAODING)/out/serif` | 运行目录 |
-| `JOBS` | 8 | paoding run 的进程数 |
+在 paoding 仓库里跑切分，再把运行目录传给 `make`：
+
+```sh
+make SANS_RUN=../paoding/out/sans SERIF_RUN=../paoding/out/serif
+```
+
+运行用的字体必须与 `sources.toml` 中的版本相同（按哈希核对）。同时修改 paoding 时，可以临时把 `pyproject.toml` 中 `[tool.uv.sources]` 的 paoding 改为本地路径。
 
 ## 发布
 
@@ -31,8 +33,8 @@ gh release create v0.002 release/0.002/*.zip release/0.002/*.woff2 release/0.002
 ## 单个字体
 
 ```sh
-uv run paoding-color-fonts --run ../paoding/out/sans \
-  --font ../paoding/data/fonts/SourceHanSansSC-Regular.otf \
+uv run paoding-color-fonts --run data/runs/sans \
+  --font data/fonts/SourceHanSansSC-Regular.otf \
   --family "Paoding Sans SC" --kind palette --out dist/PaodingSansSC-Regular.otf
 ```
 

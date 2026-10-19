@@ -215,8 +215,8 @@ wheels = [
 
 [[package]]
 name = "paoding"
-version = "0.1.0.dev0"
-source = { editable = "../paoding" }
+version = "0.1.0"
+source = { git = "https://github.com/firede/paoding?tag=v0.1.0#70846e938316a1443bd8b6f0dd39c002c85c47cd" }
 dependencies = [
     { name = "fonttools" },
     { name = "numpy" },
@@ -226,20 +226,6 @@ dependencies = [
     { name = "shapely" },
     { name = "skia-pathops" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "fonttools", specifier = ">=4.50" },
-    { name = "numpy", specifier = ">=2.0" },
-    { name = "pillow", specifier = ">=10.0" },
-    { name = "scikit-image", specifier = ">=0.24" },
-    { name = "scipy", specifier = ">=1.13" },
-    { name = "shapely", specifier = ">=2.0" },
-    { name = "skia-pathops", specifier = ">=0.8" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8" }]
 
 [[package]]
 name = "paoding-color-fonts"
@@ -255,7 +241,7 @@ dependencies = [
 requires-dist = [
     { name = "brotli", specifier = ">=1.1" },
     { name = "fonttools", specifier = ">=4.50" },
-    { name = "paoding", editable = "../paoding" },
+    { name = "paoding", git = "https://github.com/firede/paoding?tag=v0.1.0" },
 ]
 
 [[package]]

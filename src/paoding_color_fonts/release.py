@@ -61,7 +61,7 @@ def run_header(run):
         return json.loads(f.readline())
 
 
-def notes(fonts, runs, paoding):
+def notes(fonts, runs):
     rows = [describe(f) for f in fonts]
     lines = [f"Paoding Color Fonts {VERSION}。", "",
              "| 字族 | 字符 | 着色的字 | 字形 |", "|---|---|---|---|"]
@@ -70,8 +70,7 @@ def notes(fonts, runs, paoding):
               "GitHub 的下载地址不能直接作为网页字体引用，请放到自己的站点上。用法见"
               f"[在网页中使用]({REPO}/blob/main/docs/web.md)。", "",
               "## 构建", "",
-              f"- paoding-color-fonts：{commit(ROOT)}",
-              f"- paoding：{commit(paoding)}"]
+              f"- paoding-color-fonts：{commit(ROOT)}"]
     for run in runs:
         h = run_header(run)
         refs = "、".join(f"{r['file']} `{r['sha256'][:12]}`" for r in h["reference"])
@@ -87,7 +86,6 @@ def main():
     p = argparse.ArgumentParser(prog="python -m paoding_color_fonts.release", description=__doc__.splitlines()[0])
     p.add_argument("fonts", nargs="+", help="the built .otf files; each .woff2 is beside it")
     p.add_argument("--runs", nargs="+", required=True, help="the paoding runs they were built from")
-    p.add_argument("--paoding", default="../paoding")
     p.add_argument("--out", default="release")
     a = p.parse_args()
     out = Path(a.out) / VERSION
@@ -107,7 +105,7 @@ def main():
         (out / f.name).write_bytes(f.read_bytes())
     assets = sorted(p for p in out.iterdir() if p.suffix in (".zip", ".woff2"))
     (out / "SHA256SUMS").write_text("".join(f"{sha256(p)}  {p.name}\n" for p in assets))
-    (out / "notes.md").write_text(notes(otfs, a.runs, a.paoding), encoding="utf-8")
+    (out / "notes.md").write_text(notes(otfs, a.runs), encoding="utf-8")
     for p in assets + [out / "SHA256SUMS", out / "notes.md"]:
         print(f"{p.stat().st_size / 1e6:8.1f} MB  {p}")
 

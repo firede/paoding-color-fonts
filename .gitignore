@@ -1,4 +1,5 @@
 /.venv/
+/data/
 /dist/
 /release/
 __pycache__/
