@@ -36,7 +36,9 @@ LIGHT = ["#C8372D", "#1F5FBF", "#2E8B3E", "#B7791F", "#7B3FB0", "#13858F"]
 DARK = ["#FF8A7F", "#7DB2FF", "#78D492", "#F2BE55", "#C597F2", "#5FD6DF"]
 ALPHA = [1.0, 0.5, 0.75, 0.35, 0.6, 0.45]
 
-# plain glyphs kept alongside the hanzi, when the source font has them
+# plain glyphs kept alongside the hanzi, when the source font has them: besides these, every
+# hanzi the run did not split, so text never falls back to another font
+HANZI = [(0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF), (0x20000, 0x3FFFF)]
 EXTRA = ([chr(c) for c in range(0x20, 0x7F)] + [chr(c) for c in range(0x3000, 0x3040)]
          + [chr(c) for c in range(0xFF01, 0xFF5F)] + list("—‘’“”…·"))
 
@@ -81,7 +83,9 @@ def build(run, source, out, family, kind, chars=None):
     font = OutlineFont(source)
     wanted = set(chars) if chars else None
     records = [r for r in records if (wanted is None or r["char"] in wanted) and "units" in r]
-    plain = [c for c in EXTRA if ord(c) in cmap and (wanted is None or c in wanted)]
+    split = {r["char"] for r in records}
+    hanzi = [chr(cp) for cp in sorted(cmap) if any(a <= cp <= b for a, b in HANZI) and chr(cp) not in split]
+    plain = [c for c in EXTRA + hanzi if ord(c) in cmap and (wanted is None or c in wanted)]
 
     order, strings, metrics, mapping, color = [".notdef"], {}, {}, {}, {}
     notdef = src.getGlyphOrder()[0]
@@ -160,7 +164,7 @@ def build(run, source, out, family, kind, chars=None):
     fb.font.save(out)
     fb.font.flavor = "woff2"
     fb.font.save(out.with_suffix(".woff2"))
-    return len(records), len(color), len(order)
+    return len(records), len(color), len(plain), len(order)
 
 
 def _ink(base, layers):
@@ -189,8 +193,8 @@ def main():
     chars = a.chars
     if chars and chars.startswith("@"):
         chars = Path(chars[1:]).read_text(encoding="utf-8")
-    n, colored, glyphs = build(a.run, a.font, a.out, a.family, a.kind, chars)
-    print(f"{n} characters, {colored} in color, {glyphs} glyphs -> {a.out}")
+    n, colored, plain, glyphs = build(a.run, a.font, a.out, a.family, a.kind, chars)
+    print(f"{n} characters split, {colored} of them in color; {plain} plain; {glyphs} glyphs -> {a.out}")
 
 
 if __name__ == "__main__":

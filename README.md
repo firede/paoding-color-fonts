@@ -13,7 +13,7 @@
 | Paoding Serif SC | 思源宋体 SC Regular | 调色板（COLRv0 + CPAL） |
 | Paoding Serif SC Ink | 思源宋体 SC Regular | 文字颜色加透明度（COLRv1） |
 
-字符集是 paoding run 覆盖的汉字，另含 ASCII、CJK 标点和全角字符（不着色）。每个字保留原字形，不支持彩色字体的环境照常以文字颜色显示。只有一个部件的字也是如此。
+字符集是来源字体的全部汉字，另含 ASCII、CJK 标点和全角字符。paoding run 切分过的字着色；其余的字（run 没有覆盖的，以及只有一个部件的）保留原字形，以文字颜色显示，不会回退到别的字体。不支持彩色字体的环境也照常显示原字形。
 
 - **调色板版**：带两套调色板，第 0 套用于浅色背景，第 1 套用于深色背景。颜色按记录中部件的次序分配，通常即 IDS 中的次序（⿰ 的左、⿱ 的上、⿴ 的外为第 0 个）。CSS 可以选用任一套，并覆盖其中任意颜色，包括透明度。
 - **Ink 版**：所有部件都用文字颜色（CSS `color`），只以透明度区分：第 0 个部件 100%，第 1 个 50%，其后 75%、35%……只换字体、不写任何 CSS 时就能随深浅模式变化。颜色不能再用 CSS 改。
@@ -59,4 +59,4 @@ uv run paoding-color-fonts ... --family "Paoding Sans SC Ink" --kind ink --out d
 
 ## 许可
 
-代码采用 MIT 许可，见 `LICENSE`。生成的字体是思源黑体、思源宋体的衍生作品，采用 SIL Open Font License 1.1，见 `OFL.txt`；按其要求不使用保留名 “Source”。部件的拆法源自 MMAH 的 `dictionary.txt`（LGPL-3.0），见 `NOTICE.md`。
+代码采用 MIT 许可，见 `LICENSE`。生成的字体是思源黑体、思源宋体的衍生作品，采用 SIL Open Font License 1.1，见 `OFL.txt`；按其要求不使用保留名 “Source”。部件的拆法源自 MMAH 的 `dictionary.txt`（LGPL-3.0），MMAH 没有的字取自 BabelStone 的 IDS 表，见 `NOTICE.md`。
