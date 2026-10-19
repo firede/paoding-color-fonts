@@ -10,6 +10,10 @@ never overlap) each become a layer glyph:
 - ink: COLRv1 layers in the text color (the foreground), parts told apart by
   alpha alone; it follows `color` with no CSS of its own.
 
+The font is the source cut down to its hanzi and some punctuation, keeping
+the source's glyph names, so its layout (GSUB, GPOS) and vertical metrics carry
+over; layers stand where their glyphs stand.
+
 Layers that only meet along an edge leave a hairline seam where both are
 antialiased. So the whole glyph goes underneath first, in the first part's
 color (palette) or the lowest alpha (ink), and the parts drawn over it are
@@ -21,6 +25,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from fontTools import subset
 from fontTools.colorLib.builder import ColorPaletteType, buildCOLR, buildCPAL
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.boundsPen import BoundsPen
@@ -44,6 +49,12 @@ HANZI = [(0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF), (0x20000, 0x3FFFF
 EXTRA = ([chr(c) for c in range(0x20, 0x7F)] + [chr(c) for c in range(0x3000, 0x3040)]
          + [chr(c) for c in range(0xFF01, 0xFF5F)] + list("—‘’“”…·"))
 
+# the source's features that matter in Chinese text, horizontal and vertical. Not locl: it
+# reaches the source's other regional forms (Japanese, Korean, traditional), some 18000
+# glyphs, which would not fit beside the layers
+FEATURES = ["ccmp", "liga", "kern", "palt", "halt", "chws", "fwid", "hwid", "pwid",
+            "vert", "vrt2", "vkrn", "vpal", "vhal", "vchw"]
+
 
 def read_run(path):
     lines = Path(path).read_text(encoding="utf-8").splitlines()
@@ -57,11 +68,6 @@ def sha256(path):
         for block in iter(lambda: f.read(1 << 20), b""):
             h.update(block)
     return h.hexdigest()
-
-
-def glyph_name(char):
-    cp = ord(char)
-    return f"uni{cp:04X}" if cp <= 0xFFFF else f"u{cp:05X}"
 
 
 def charstring(draw, advance):
@@ -80,50 +86,40 @@ def build(run, source, out, family, kind, chars=None):
     header, records = read_run(Path(run) / "records.jsonl")
     if header["font"]["sha256"] != sha256(source):
         raise SystemExit(f"{run} was made from another version of {header['font']['file']}")
-    src = TTFont(source, lazy=True)
-    cmap, hmtx, glyphs = src.getBestCmap(), src["hmtx"], src.getGlyphSet()
-    font = OutlineFont(source)
     wanted = set(chars) if chars else None
     records = [r for r in records if (wanted is None or r["char"] in wanted) and "units" in r]
-    split = {r["char"] for r in records}
-    hanzi = [chr(cp) for cp in sorted(cmap) if any(a <= cp <= b for a, b in HANZI) and chr(cp) not in split]
-    plain = [c for c in EXTRA + hanzi if ord(c) in cmap and (wanted is None or c in wanted)]
+    src = subset_source(source, wanted)
+    order, hmtx, glyphs = list(src.getGlyphOrder()), src["hmtx"], src.getGlyphSet()
+    font = OutlineFont(source)
 
-    order, strings, metrics, mapping, color = [".notdef"], {}, {}, {}, {}
-    notdef = src.getGlyphOrder()[0]
-    strings[".notdef"] = charstring(glyphs[notdef].draw, hmtx[notdef][0])
-    metrics[".notdef"] = hmtx[notdef]
+    strings, metrics, bounds_of, color = {}, {}, {}, {}
 
     def add(name, draw, advance):
-        order.append(name)
         strings[name] = charstring(draw, advance)
-        box = bounds(draw)
-        metrics[name] = (advance, box[0] if box else 0)
+        bounds_of[name] = bounds(draw)
+        metrics[name] = (advance, bounds_of[name][0] if bounds_of[name] else 0)
 
-    for c in plain:
-        g = cmap[ord(c)]
-        add(glyph_name(c), glyphs[g].draw, hmtx[g][0])
-        mapping[ord(c)] = glyph_name(c)
+    for g in order:
+        add(g, glyphs[g].draw, hmtx[g][0])
     for rec in records:
-        c, g = rec["char"], cmap[ord(rec["char"])]
-        base, advance = glyph_name(c), hmtx[g][0]
-        add(base, glyphs[g].draw, advance)
-        mapping[ord(c)] = base
+        base = rec["glyph"]
+        if base in color or base not in glyphs:
+            continue        # one glyph for several code points; or a character not wanted
         flat = realize_record(rec, font)["flat"]
-        layers = []
-        for k, node in enumerate(rec["nodes"]):
-            path = flat.get(node)
-            if path is None or not bounds(path.draw):
-                continue
-            name = f"{base}.p{k}"
-            add(name, path.draw, advance)
-            layers.append((name, k))
-        if len(layers) > 1:
-            color[base] = layers
+        parts = [(k, flat[n]) for k, n in enumerate(rec["nodes"]) if n in flat and bounds(flat[n].draw)]
+        if len(parts) < 2:
+            continue        # one part: the plain glyph in the text color
+        for k, path in parts:
+            add(f"{base}.p{k}", path.draw, hmtx[base][0])
+        color[base] = [(f"{base}.p{k}", k) for k, _ in parts]
+    # each glyph's layers right after it: they share its outline, which compresses well only nearby
+    order = [name for g in order for name in [g] + [n for n, _ in color.get(g, ())]]
 
     fb = FontBuilder(1000, isTTF=False)
     fb.setupGlyphOrder(order)
-    fb.setupCharacterMap(mapping)
+    cmap = src["cmap"]
+    uvs = [(cp, vs, g) for t in cmap.tables if t.format == 14 for vs, seqs in t.uvsDict.items() for cp, g in seqs]
+    fb.setupCharacterMap(src.getBestCmap(), uvs=uvs or None)
     ps = family.replace(" ", "") + "-Regular"
     fb.setupCFF(ps, {"FullName": f"{family} Regular", "FamilyName": family, "Weight": "Regular"}, strings, {})
     fb.setupHorizontalMetrics(metrics)
@@ -138,7 +134,7 @@ def build(run, source, out, family, kind, chars=None):
         "copyright": f"{src['name'].getDebugName(0)} Parts colored with paoding.",
         "familyName": family,
         "styleName": "Regular",
-        "uniqueFontIdentifier": f"{ps};{header['tool']}",
+        "uniqueFontIdentifier": f"{ps};{VERSION};{header['tool']}",
         "fullName": f"{family} Regular",
         "psName": ps,
         "version": f"Version {VERSION}",
@@ -147,6 +143,11 @@ def build(run, source, out, family, kind, chars=None):
     })
     fb.setupPost()
     fb.font["head"].fontRevision = float(VERSION)
+    _vertical(fb, src, color, bounds_of)
+    # layout as the source has it: the glyphs keep their names, so the tables carry over
+    for tag in ("GDEF", "GSUB", "GPOS", "BASE"):
+        if tag in src:
+            fb.font[tag] = src[tag]
 
     if kind == "palette":
         rgba = lambda hexes: [tuple(int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)) + (1.0,) for h in hexes]
@@ -167,7 +168,46 @@ def build(run, source, out, family, kind, chars=None):
     fb.font.save(out)
     fb.font.flavor = "woff2"
     fb.font.save(out.with_suffix(".woff2"))
-    return len(records), len(color), len(plain), len(order)
+    return len(records), len(color), len(glyphs), len(order)
+
+
+def subset_source(source, wanted=None):
+    """The source font cut down to the hanzi and EXTRA (or the wanted characters among them),
+    with its layout tables and the glyphs they reach, under the source's own glyph names."""
+    src = TTFont(source)
+    unicodes = [cp for cp in src.getBestCmap()
+                if (any(a <= cp <= b for a, b in HANZI) or chr(cp) in EXTRA) and (wanted is None or chr(cp) in wanted)]
+    opts = subset.Options()
+    opts.layout_features = FEATURES
+    opts.drop_tables = [t for t in opts.drop_tables if t != "BASE"]
+    opts.notdef_outline = opts.glyph_names = True
+    opts.name_IDs = ["*"]
+    sub = subset.Subsetter(opts)
+    sub.populate(unicodes=unicodes)
+    sub.subset(src)
+    return src
+
+
+def _vertical(fb, src, color, bounds_of):
+    """vhea, vmtx and VORG from the source; a layer stands where its glyph stands."""
+    if "vmtx" not in src:
+        return
+    vmtx, vorg = src["vmtx"].metrics, src["VORG"] if "VORG" in src else None
+    origin = lambda g: vorg.VOriginRecords.get(g, vorg.defaultVertOriginY) if vorg else None
+    metrics = dict(vmtx)
+    for base, layers in color.items():
+        for name, _ in layers:
+            box = bounds_of[name]
+            y = origin(base)
+            metrics[name] = (vmtx[base][0], round(y - box[3]) if y is not None else vmtx[base][1])
+            if vorg and base in vorg.VOriginRecords:
+                vorg.VOriginRecords[name] = vorg.VOriginRecords[base]
+    vhea = src["vhea"]
+    fb.setupVerticalHeader(ascent=vhea.ascent, descent=vhea.descent, lineGap=vhea.lineGap)
+    fb.setupVerticalMetrics(metrics)
+    if vorg:
+        vorg.numVertOriginYMetrics = len(vorg.VOriginRecords)
+        fb.font["VORG"] = vorg
 
 
 def _ink(base, layers):
@@ -196,8 +236,9 @@ def main():
     chars = a.chars
     if chars and chars.startswith("@"):
         chars = Path(chars[1:]).read_text(encoding="utf-8")
-    n, colored, plain, glyphs = build(a.run, a.font, a.out, a.family, a.kind, chars)
-    print(f"{n} characters split, {colored} of them in color; {plain} plain; {glyphs} glyphs -> {a.out}")
+    n, colored, source, glyphs = build(a.run, a.font, a.out, a.family, a.kind, chars)
+    print(f"{n} characters split, {colored} of them in color; "
+          f"{source} glyphs from the source and {glyphs - source} layers -> {a.out}")
 
 
 if __name__ == "__main__":

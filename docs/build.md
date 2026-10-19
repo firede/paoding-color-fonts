@@ -33,9 +33,12 @@ uv run paoding-color-fonts --run ../paoding/out/sans \
 
 ## 字体的构成
 
-- 每个切分过的字，原轮廓作为基础字形，供不支持彩色字体的环境使用；记录的拍平视图中的每个部件是一个图层。
+- 字体由来源字体裁剪而来：保留全部汉字、ASCII、CJK 标点和全角字符，以及排版特性用到的字形，字形名与来源相同。
+- 每个切分过、有多个部件的字，原轮廓作为基础字形，供不支持彩色字体的环境使用；记录的拍平视图中的每个部件是一个图层，紧跟在它的字形之后。
 - 调色板版：COLRv0 + CPAL。Ink 版：COLRv1，前景色加透明度。两者都先以整字垫底，避免部件交界处的细缝。
-- 字符集：来源字体的全部汉字，加上 ASCII、CJK 标点和全角字符。约 52000 个字形，OpenType 的上限是 65535。
+- 竖排度量（`vhea`、`vmtx`、`VORG`）和 `BASE` 来自来源字体；图层的竖排位置与它的字形相同。
+- 排版特性来自来源字体：`vert`、`vrt2`、`vpal`、`vhal`（竖排），`palt`、`halt`、`kern`（标点挤压与字距），`fwid`、`hwid`、`pwid`、`ccmp`、`liga`。不含 `locl`：它带来来源字体中日、韩、繁体等地区字形，约 18000 个，放不下。
+- 约 52000 个字形，OpenType 的上限是 65535。
 - 版本号在 `src/paoding_color_fonts/build.py` 的 `VERSION`。
 
-目前没有竖排度量（`vhea`、`vmtx`、`VORG`）和 OpenType 特性（`GSUB`、`GPOS`），竖排和标点挤压会不如来源字体。只有 Regular 一种字重。
+不保留来源字体的 hinting，在使用 hinting 的环境（如 Windows、Linux）中小字号下笔画可能比来源字体略细。只有 Regular 一种字重。

@@ -42,6 +42,10 @@
 .text { font-family: "Paoding Sans SC Ink", sans-serif; }
 ```
 
+## 排版
+
+竖排（`writing-mode: vertical-rl`）和标点挤压（`font-feature-settings: "palt"`，竖排为 `"vpal"`）与来源字体相同，着色部件随字形一起排列。
+
 ## 浏览器支持
 
 - `font-palette` 和 `@font-palette-values`：Chrome 101、Firefox 107、Safari 15.4 起。
