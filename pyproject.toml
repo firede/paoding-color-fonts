@@ -1,0 +1,22 @@
+[project]
+name = "paoding-color-fonts"
+version = "0.1.0.dev0"
+description = "由 paoding 的部件切分生成彩色结构字体"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "brotli>=1.1",
+    "fonttools>=4.50",
+    "paoding",
+]
+
+[project.scripts]
+paoding-color-fonts = "paoding_color_fonts.build:main"
+
+[tool.uv.sources]
+paoding = { path = "../paoding", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paoding 彩色字体测试</title>
+<style>
+@font-face { font-family: "Paoding Sans SC"; src: url(../dist/PaodingSansSC-Regular.woff2) format("woff2"); }
+@font-face { font-family: "Paoding Sans SC Ink"; src: url(../dist/PaodingSansSCInk-Regular.woff2) format("woff2"); }
+@font-face { font-family: "Paoding Serif SC"; src: url(../dist/PaodingSerifSC-Regular.woff2) format("woff2"); }
+@font-face { font-family: "Paoding Serif SC Ink"; src: url(../dist/PaodingSerifSCInk-Regular.woff2) format("woff2"); }
+
+/* the fonts' own palettes: 0 for light backgrounds, 1 for dark */
+@font-palette-values --paoding-light { font-family: "Paoding Sans SC", "Paoding Serif SC"; base-palette: 0; }
+@font-palette-values --paoding-dark { font-family: "Paoding Sans SC", "Paoding Serif SC"; base-palette: 1; }
+
+:root {
+  color-scheme: light;
+  --bg: #fbfaf7; --fg: #1d1d1f; --muted: #6b6b70; --line: #e2e0da; --panel: #f2f0ea;
+  --palette: --paoding-light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #17171a; --fg: #ececf0; --muted: #9a9aa2; --line: #2e2e33; --panel: #212125;
+    --palette: --paoding-dark;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #17171a; --fg: #ececf0; --muted: #9a9aa2; --line: #2e2e33; --panel: #212125;
+  --palette: --paoding-dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 18px; margin: 0 0 4px; }
+p.note { color: var(--muted); margin: 0 0 20px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 12px 14px; background: var(--panel);
+            border: 1px solid var(--line); border-radius: 8px; margin-bottom: 24px; }
+.controls label { display: flex; align-items: center; gap: 6px; }
+.controls .colors { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+section { border-top: 1px solid var(--line); padding: 16px 0; }
+section h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.sample { font-family: var(--family), system-ui, sans-serif; font-size: var(--size); line-height: 1.5;
+          font-palette: var(--palette); overflow-wrap: anywhere; }
+.plain { font-family: "Paoding Sans SC", system-ui; font-size: var(--size); line-height: 1.5;
+         font-palette: var(--palette); }
+code { font-size: 12px; }
+</style>
+<style id="custom"></style>
+</head>
+<body>
+<main>
+  <h1>Paoding 彩色字体测试</h1>
+  <p class="note">同一段文字，在不同的字体版本、调色板和深浅模式下的样子。网址参数：<code>?theme=light|dark&amp;font=sans|sans-ink|serif|serif-ink&amp;size=48</code></p>
+
+  <div class="controls">
+    <label>模式 <select id="theme"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
+    <label>字体 <select id="font">
+      <option value="sans">Paoding Sans SC（调色板）</option><option value="sans-ink">Paoding Sans SC Ink（跟随文字色）</option>
+      <option value="serif">Paoding Serif SC（调色板）</option><option value="serif-ink">Paoding Serif SC Ink（跟随文字色）</option></select></label>
+    <label>字号 <input id="size" type="range" min="16" max="160" value="64"><span id="sizeval"></span></label>
+    <label><input id="override" type="checkbox"> 用 CSS 覆盖颜色</label>
+    <div class="colors" id="colors"></div>
+  </div>
+
+  <section>
+    <h2>样例</h2>
+    <div class="sample" id="sample" contenteditable="true" spellcheck="false">庖丁解牛，依乎天理，批大郤，导大窾，因其固然。</div>
+  </section>
+  <section>
+    <h2>正文字号</h2>
+    <div class="sample" style="--size: 16px">庖丁为文惠君解牛，手之所触，肩之所倚，足之所履，膝之所踦，砉然向然，奏刀騞然，莫不中音。合于桑林之舞，乃中经首之会。文惠君曰：“嘻，善哉！技盖至此乎？”庖丁释刀对曰：“臣之所好者道也，进乎技矣。”</div>
+  </section>
+  <section>
+    <h2>只换字体（不设 font-palette，用字体的第 0 套调色板）</h2>
+    <div style="font-family: var(--family), system-ui; font-size: var(--size)">庖丁解牛</div>
+  </section>
+  <section>
+    <h2>CSS</h2>
+    <pre id="css"><code></code></pre>
+  </section>
+</main>
+<script>
+const DEFAULTS = { light: ["#C8372D", "#1F5FBF", "#2E8B3E", "#B7791F"], dark: ["#FF8A7F", "#7DB2FF", "#78D492", "#F2BE55"] };
+const q = new URLSearchParams(location.search);
+const $ = (id) => document.getElementById(id);
+const FAMILIES = { sans: "Paoding Sans SC", "sans-ink": "Paoding Sans SC Ink", serif: "Paoding Serif SC", "serif-ink": "Paoding Serif SC Ink" };
+const state = { theme: q.get("theme") || "", font: FAMILIES[q.get("font")] ? q.get("font") : "sans", size: +(q.get("size") || 64), override: q.get("override") === "1",
+                colors: DEFAULTS.light.map((c) => ({ c, a: 100 })) };
+
+function dark() {
+  return state.theme === "dark" || (!state.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgb(${n >> 16} ${(n >> 8) & 255} ${n & 255} / ${a}%)`;
+}
+function render() {
+  document.documentElement.toggleAttribute("data-theme", !!state.theme);
+  if (state.theme) document.documentElement.dataset.theme = state.theme;
+  const family = FAMILIES[state.font];
+  document.documentElement.style.setProperty("--family", `"${family}"`);
+  document.documentElement.style.setProperty("--size", state.size + "px");
+  $("sizeval").textContent = state.size + "px";
+  let css = "";
+  if (state.override) {
+    css = `@font-palette-values --custom {\n  font-family: "${family}";\n  base-palette: ${dark() ? 1 : 0};\n  override-colors:\n` +
+      state.colors.map((x, i) => `    ${i} ${rgba(x.c, x.a)}`).join(",\n") + ";\n}\n.sample { font-palette: --custom; }";
+  }
+  $("custom").textContent = css;
+  $("css").firstChild.textContent = css || `/* 字体自带的调色板 */\n.sample { font-palette: ${dark() ? "--paoding-dark" : "--paoding-light"}; }`;
+  $("colors").style.display = state.override ? "" : "none";
+  const u = new URLSearchParams();
+  if (state.theme) u.set("theme", state.theme);
+  if (state.font !== "sans") u.set("font", state.font);
+  if (state.size !== 64) u.set("size", state.size);
+  if (state.override) u.set("override", "1");
+  history.replaceState(null, "", u.toString() ? "?" + u : location.pathname);
+}
+function controls() {
+  $("theme").value = state.theme; $("font").value = state.font; $("size").value = state.size; $("override").checked = state.override;
+  $("colors").innerHTML = state.colors.map((x, i) =>
+    `<label>${i} <input type="color" data-i="${i}" value="${x.c}"> <input type="range" data-a="${i}" min="0" max="100" value="${x.a}"></label>`).join("");
+}
+$("theme").onchange = (e) => { state.theme = e.target.value; render(); };
+$("font").onchange = (e) => { state.font = e.target.value; render(); };
+$("size").oninput = (e) => { state.size = +e.target.value; render(); };
+$("override").onchange = (e) => { state.override = e.target.checked; render(); };
+$("colors").oninput = (e) => {
+  const t = e.target;
+  if (t.dataset.i) state.colors[+t.dataset.i].c = t.value;
+  if (t.dataset.a) state.colors[+t.dataset.a].a = +t.value;
+  render();
+};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+controls();
+render();
+</script>
+</body>
+</html>
