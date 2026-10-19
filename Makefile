@@ -4,6 +4,9 @@
 #   make release    checks them and packs them for a GitHub release under release/<version>/
 # To build from runs of your own, set SANS_RUN and SERIF_RUN (see docs/build.md).
 
+# timestamps in the fonts from the last commit, so the same inputs give the same bytes
+export SOURCE_DATE_EPOCH ?= $(shell git log -1 --format=%ct)
+
 SANS_RUN ?= data/runs/sans
 SERIF_RUN ?= data/runs/serif
 SANS_FONT = data/fonts/SourceHanSansSC-Regular.otf

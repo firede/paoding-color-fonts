@@ -9,7 +9,7 @@ make release    # 检查后打包到 release/<版本>/
 make clean
 ```
 
-`make` 先按 `sources.toml` 把固定版本的输入下载到 `data/`，核对哈希：[paoding](https://github.com/firede/paoding) 发布的思源黑体、思源宋体的部件标注，以及这两套字体本身。之后只要输入和生成代码不变，`make` 不会重复生成。paoding 本身按 git tag 安装（`pyproject.toml`），用来从标注重建各部件。
+`make` 先按 `sources.toml` 把固定版本的输入下载到 `data/`，核对哈希：[paoding](https://github.com/firede/paoding) 发布的思源黑体、思源宋体的部件标注，以及这两套字体本身。之后只要输入和生成代码不变，`make` 不会重复生成。字体中的时间戳取自当前提交的时间（`SOURCE_DATE_EPOCH`），同样的输入生成逐字节相同的字体。paoding 本身按 git tag 安装（`pyproject.toml`），用来从标注重建各部件。
 
 ## 用自己的切分
 
