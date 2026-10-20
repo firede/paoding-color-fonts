@@ -4,10 +4,10 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/sample-dark.png">
-  <img alt="庖丁解牛，依乎天理，因其固然。上：Paoding Sans SC；下：Paoding Serif SC" src="docs/images/sample-light.png">
+  <img alt="庖丁解牛，依乎天理，因其固然。自上而下：Paoding Sans SC、Paoding Sans SC Ink、Paoding Serif SC、Paoding Serif SC Ink" src="docs/images/sample-light.png">
 </picture>
 
-上：Paoding Sans SC。下：Paoding Serif SC。
+自上而下：Paoding Sans SC、Sans SC Ink、Serif SC、Serif SC Ink。
 
 | 字族 | 来源 | 着色 |
 |---|---|---|
